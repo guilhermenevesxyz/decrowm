@@ -1,9 +1,17 @@
-PREFIX?=/usr/X11R6
-CFLAGS?=-Os -pedantic -Wall
+CFLAGS?=-O2 -std=c17 -pedantic -Wall -Wextra
+
+.PHONY: all clean install uninstall
 
 all:
-	$(CC) $(CFLAGS) -I$(PREFIX)/include tinywm.c -L$(PREFIX)/lib -lX11 -o tinywm
+	$(CC) $(CFLAGS) tinywm.c -o tinywm -lX11
 
 clean:
 	rm -f tinywm
 
+install: all
+	mkdir -pv $(DESTDIR)/usr/local/bin
+	cp -fv tinywm $(DESTDIR)/usr/local/bin/
+	chmod 755 $(DESTDIR)/usr/local/bin/tinywm
+
+uninstall:
+	rm -fv $(DESTDIR)/usr/local/bin/tinywm
