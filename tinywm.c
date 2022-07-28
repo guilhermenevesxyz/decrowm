@@ -27,8 +27,10 @@ int main(void)
     for(;;)
     {
         XNextEvent(dpy, &ev);
-        if(ev.type == KeyPress && ev.xkey.subwindow != None)
+        if(ev.type == KeyPress && ev.xkey.subwindow != None) {
             XRaiseWindow(dpy, ev.xkey.subwindow);
+            XSetInputFocus(dpy, ev.xkey.subwindow, RevertToPointerRoot, CurrentTime);
+        }
         else if(ev.type == ButtonPress && ev.xbutton.subwindow != None)
         {
             XGetWindowAttributes(dpy, ev.xbutton.subwindow, &attr);
