@@ -3,15 +3,15 @@ CFLAGS?=-O2 -std=c17 -pedantic -Wall -Wextra
 .PHONY: all clean install uninstall
 
 all:
-	$(CC) $(CFLAGS) tinywm.c -o tinywm -lX11
+	$(CC) $(CFLAGS) decrowm.c -o decrowm -lX11
 
 clean:
-	rm -f tinywm
+	rm -f decrowm
 
 install: all
 	mkdir -pv $(DESTDIR)/usr/local/bin
-	cp -fv tinywm $(DESTDIR)/usr/local/bin/
-	chmod 755 $(DESTDIR)/usr/local/bin/tinywm
+	cp -fv decrowm $(DESTDIR)/usr/local/bin/
+	chmod 755 $(DESTDIR)/usr/local/bin/decrowm
 
 uninstall:
-	rm -fv $(DESTDIR)/usr/local/bin/tinywm
+	rm -fv $(DESTDIR)/usr/local/bin/decrowm
