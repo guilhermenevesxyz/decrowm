@@ -1,9 +1,8 @@
-/* TinyWM is written by Nick Welch <nick@incise.org> in 2005 & 2011.
- *
- * This software is in the public domain
- * and is provided AS IS, with NO WARRANTY. */
-
 #include <X11/Xlib.h>
+
+/* Mod1Mask -> Alt
+ * Mod4Mask -> Super/Windows */
+#define MODKEY Mod4Mask
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
@@ -16,11 +15,11 @@ int main(void)
 
     if(!(dpy = XOpenDisplay(0x0))) return 1;
 
-    XGrabKey(dpy, XKeysymToKeycode(dpy, XStringToKeysym("F1")), Mod1Mask,
+    XGrabKey(dpy, XKeysymToKeycode(dpy, XStringToKeysym("F1")), MODKEY,
             DefaultRootWindow(dpy), True, GrabModeAsync, GrabModeAsync);
-    XGrabButton(dpy, 1, Mod1Mask, DefaultRootWindow(dpy), True,
+    XGrabButton(dpy, 1, MODKEY, DefaultRootWindow(dpy), True,
             ButtonPressMask|ButtonReleaseMask|PointerMotionMask, GrabModeAsync, GrabModeAsync, None, None);
-    XGrabButton(dpy, 3, Mod1Mask, DefaultRootWindow(dpy), True,
+    XGrabButton(dpy, 3, MODKEY, DefaultRootWindow(dpy), True,
             ButtonPressMask|ButtonReleaseMask|PointerMotionMask, GrabModeAsync, GrabModeAsync, None, None);
 
     start.subwindow = None;
@@ -50,4 +49,3 @@ int main(void)
             start.subwindow = None;
     }
 }
-
