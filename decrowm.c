@@ -15,6 +15,8 @@ int main(void)
 
     if(!(dpy = XOpenDisplay(0x0))) return 1;
 
+    XGrabKey(dpy, XKeysymToKeycode(dpy, XStringToKeysym("X")), MODKEY,
+            DefaultRootWindow(dpy), True, GrabModeAsync, GrabModeAsync);
     XGrabKey(dpy, XKeysymToKeycode(dpy, XStringToKeysym("F1")), MODKEY,
             DefaultRootWindow(dpy), True, GrabModeAsync, GrabModeAsync);
     XGrabButton(dpy, 1, MODKEY, DefaultRootWindow(dpy), True,
@@ -27,8 +29,13 @@ int main(void)
     {
         XNextEvent(dpy, &ev);
         if(ev.type == KeyPress && ev.xkey.subwindow != None) {
-            XRaiseWindow(dpy, ev.xkey.subwindow);
-            XSetInputFocus(dpy, ev.xkey.subwindow, RevertToPointerRoot, CurrentTime);
+            if (ev.xkey.keycode == XKeysymToKeycode(dpy, XStringToKeysym("X"))) {
+                XDestroyWindow(dpy, ev.xkey.subwindow);
+            }
+            else if (ev.xkey.keycode == XKeysymToKeycode(dpy, XStringToKeysym("F1"))) {
+                XRaiseWindow(dpy, ev.xkey.subwindow);
+                XSetInputFocus(dpy, ev.xkey.subwindow, RevertToPointerRoot, CurrentTime);
+            }
         }
         else if(ev.type == ButtonPress && ev.xbutton.subwindow != None)
         {
