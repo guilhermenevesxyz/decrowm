@@ -17,6 +17,8 @@ int main(void)
 
     XGrabKey(dpy, XKeysymToKeycode(dpy, XStringToKeysym("X")), MODKEY,
             DefaultRootWindow(dpy), True, GrabModeAsync, GrabModeAsync);
+    XGrabKey(dpy, XKeysymToKeycode(dpy, XStringToKeysym("X")), MODKEY | ShiftMask,
+            DefaultRootWindow(dpy), True, GrabModeAsync, GrabModeAsync);
     XGrabKey(dpy, XKeysymToKeycode(dpy, XStringToKeysym("F1")), MODKEY,
             DefaultRootWindow(dpy), True, GrabModeAsync, GrabModeAsync);
     XGrabButton(dpy, 1, MODKEY, DefaultRootWindow(dpy), True,
@@ -28,13 +30,19 @@ int main(void)
     for(;;)
     {
         XNextEvent(dpy, &ev);
-        if(ev.type == KeyPress && ev.xkey.subwindow != None) {
-            if (ev.xkey.keycode == XKeysymToKeycode(dpy, XStringToKeysym("X"))) {
-                XDestroyWindow(dpy, ev.xkey.subwindow);
+        if(ev.type == KeyPress) {
+            if (ev.xkey.subwindow != None) {
+                if (ev.xkey.keycode == XKeysymToKeycode(dpy, XStringToKeysym("X")) && ev.xkey.state == MODKEY) {
+                    XDestroyWindow(dpy, ev.xkey.subwindow);
+                }
+                else if (ev.xkey.keycode == XKeysymToKeycode(dpy, XStringToKeysym("F1"))) {
+                    XRaiseWindow(dpy, ev.xkey.subwindow);
+                    XSetInputFocus(dpy, ev.xkey.subwindow, RevertToPointerRoot, CurrentTime);
+                }
             }
-            else if (ev.xkey.keycode == XKeysymToKeycode(dpy, XStringToKeysym("F1"))) {
-                XRaiseWindow(dpy, ev.xkey.subwindow);
-                XSetInputFocus(dpy, ev.xkey.subwindow, RevertToPointerRoot, CurrentTime);
+
+            if (ev.xkey.keycode == XKeysymToKeycode(dpy, XStringToKeysym("X")) && ev.xkey.state == (MODKEY | ShiftMask)) {
+                return 0;
             }
         }
         else if(ev.type == ButtonPress && ev.xbutton.subwindow != None)
