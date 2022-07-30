@@ -1,9 +1,9 @@
-CFLAGS?=-O2 -std=c17 -pedantic -Wall -Wextra
+CXXFLAGS?=-O2 -std=c++20 -pedantic -Wall -Wextra
 
 .PHONY: all clean install uninstall
 
 all:
-	$(CC) $(CFLAGS) decrowm.c -o decrowm -lX11
+	$(CXX) $(CXXFLAGS) decrowm.cpp -o decrowm -lX11
 
 clean:
 	rm -f decrowm
