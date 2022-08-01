@@ -1,69 +1,122 @@
+#include <cstdlib>
+#include <memory>
+
+extern "C" {
 #include <X11/Xlib.h>
+}
 
 /* Mod1Mask -> Alt
  * Mod4Mask -> Super/Windows */
 #define MODKEY Mod4Mask
 
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define GRAB_KEY(xdisplay, grab_window, key_cstring, keymask) \
+	XGrabKey(xdisplay, XKeysymToKeycode(xdisplay, \
+		XStringToKeysym(key_cstring)), keymask, grab_window, \
+		True, GrabModeAsync, GrabModeAsync)
 
-int main(void)
-{
-    Display * dpy;
-    XWindowAttributes attr;
-    XButtonEvent start;
-    XEvent ev;
+#define GRAB_BUTTON(xdisplay, grab_window, button_number, keymask, \
+		eventmask) \
+	XGrabButton(xdisplay, button_number, keymask, grab_window, \
+		True, eventmask, GrabModeAsync, GrabModeAsync, None, \
+		None);
 
-    if(!(dpy = XOpenDisplay(0x0))) return 1;
+#define MAX(a, b) \
+	((a) > (b) ? (a) : (b))
 
-    XGrabKey(dpy, XKeysymToKeycode(dpy, XStringToKeysym("X")), MODKEY,
-            DefaultRootWindow(dpy), True, GrabModeAsync, GrabModeAsync);
-    XGrabKey(dpy, XKeysymToKeycode(dpy, XStringToKeysym("X")), MODKEY | ShiftMask,
-            DefaultRootWindow(dpy), True, GrabModeAsync, GrabModeAsync);
-    XGrabKey(dpy, XKeysymToKeycode(dpy, XStringToKeysym("F1")), MODKEY,
-            DefaultRootWindow(dpy), True, GrabModeAsync, GrabModeAsync);
-    XGrabButton(dpy, 1, MODKEY, DefaultRootWindow(dpy), True,
-            ButtonPressMask|ButtonReleaseMask|PointerMotionMask, GrabModeAsync, GrabModeAsync, None, None);
-    XGrabButton(dpy, 3, MODKEY, DefaultRootWindow(dpy), True,
-            ButtonPressMask|ButtonReleaseMask|PointerMotionMask, GrabModeAsync, GrabModeAsync, None, None);
+int main() {
+	std::unique_ptr<Display, void (*)(Display*)> display =
+			std::unique_ptr<Display, void (*)(Display*)>(
+		XOpenDisplay(None),
+		[](Display* display) {
+			if (display == None) {
+				return;
+			}
 
-    start.subwindow = None;
-    for(;;)
-    {
-        XNextEvent(dpy, &ev);
-        if(ev.type == KeyPress) {
-            if (ev.xkey.subwindow != None) {
-                if (ev.xkey.keycode == XKeysymToKeycode(dpy, XStringToKeysym("X")) && ev.xkey.state == MODKEY) {
-                    XDestroyWindow(dpy, ev.xkey.subwindow);
-                }
-                else if (ev.xkey.keycode == XKeysymToKeycode(dpy, XStringToKeysym("F1"))) {
-                    XRaiseWindow(dpy, ev.xkey.subwindow);
-                    XSetInputFocus(dpy, ev.xkey.subwindow, RevertToPointerRoot, CurrentTime);
-                }
-            }
+			XCloseDisplay(display);
+		}
+	);
 
-            if (ev.xkey.keycode == XKeysymToKeycode(dpy, XStringToKeysym("X")) && ev.xkey.state == (MODKEY | ShiftMask)) {
-                return 0;
-            }
-        }
-        else if(ev.type == ButtonPress && ev.xbutton.subwindow != None)
-        {
-            XGetWindowAttributes(dpy, ev.xbutton.subwindow, &attr);
-            start = ev.xbutton;
+	try {
+		if (display == None) {
+			throw;
+		}
+	}
+	catch (...) {
+		std::exit(EXIT_FAILURE);
+	}
 
-            XRaiseWindow(dpy, ev.xbutton.subwindow);
-            XSetInputFocus(dpy, ev.xbutton.subwindow, RevertToPointerRoot, CurrentTime);
-        }
-        else if(ev.type == MotionNotify && start.subwindow != None)
-        {
-            int xdiff = ev.xbutton.x_root - start.x_root;
-            int ydiff = ev.xbutton.y_root - start.y_root;
-            XMoveResizeWindow(dpy, start.subwindow,
-                attr.x + (start.button==1 ? xdiff : 0),
-                attr.y + (start.button==1 ? ydiff : 0),
-                MAX(1, attr.width + (start.button==3 ? xdiff : 0)),
-                MAX(1, attr.height + (start.button==3 ? ydiff : 0)));
-        }
-        else if(ev.type == ButtonRelease)
-            start.subwindow = None;
-    }
+	const Window root_window = DefaultRootWindow(display.get());
+
+	GRAB_KEY(display.get(), root_window, "X", MODKEY);
+	GRAB_KEY(display.get(), root_window, "X", MODKEY | ShiftMask);
+
+	GRAB_BUTTON(display.get(), root_window, 1, MODKEY,
+		ButtonPressMask | ButtonReleaseMask | PointerMotionMask);
+	GRAB_BUTTON(display.get(), root_window, 3, MODKEY,
+		ButtonPressMask | ButtonReleaseMask | PointerMotionMask);
+
+	XEvent event;
+
+	XButtonEvent edit_window_start;
+	XWindowAttributes window_attributes;
+
+	button_event_start.subwindow = None;
+
+	for(;;) {
+		XNextEvent(display.get(), &event);
+
+		switch (event.type) {
+		case KeyPress:
+			if (event.xkey.subwindow != None && event.xkey.state & ~ShiftMask) {
+				XDestroyWindow(display.get(), event.xkey.subwindow);
+			}
+
+			if (event.xkey.state & ShiftMask) {
+				return EXIT_SUCCESS;
+			}
+
+			break;
+
+		case ButtonPress:
+			if (event.xbutton.subwindow != None) {
+				XGetWindowAttributes(display.get(),
+					event.xbutton.subwindow,
+					&window_attributes);
+				edit_window_start = event.xbutton;
+
+				XRaiseWindow(display.get(),
+					event.xbutton.subwindow);
+				XSetInputFocus(display.get(),
+					event.xbutton.subwindow,
+					RevertToPointerRoot, CurrentTime);
+			}
+
+			break;
+
+		case MotionNotify:
+			if (edit_window_start.subwindow != None) {
+				int x_offset = event.xbutton.x_root - edit_window_start.x_root;
+				int y_offset = event.xbutton.y_root - edit_window_start.y_root;
+
+				XMoveResizeWindow(
+					display.get(),
+					edit_window_start.subwindow,
+					window_attributes.x + (edit_window_start.button == 1 ? x_offset : 0),
+					window_attributes.y + (edit_window_start.button == 1 ? y_offset : 0),
+					MAX(1, window_attributes.width + (edit_window_start.button == 3 ? x_offset : 0)),
+					MAX(1, window_attributes.height + (edit_window_start.button == 3 ? y_offset : 0))
+				);
+			}
+
+			break;
+
+		case ButtonRelease:
+			edit_window_start.subwindow = None;
+			break;
+		}
+
+		XSync(display.get(), False);
+	}
+
+	return EXIT_SUCCESS;
 }
